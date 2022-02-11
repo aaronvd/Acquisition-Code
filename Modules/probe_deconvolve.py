@@ -82,8 +82,8 @@ def make_A_mat(f, a, b, x_probe, y_probe, z_offset):
     E_horizontal[:,:,:,:,0] = E_vertical[:,:,:,:,1]
     E_horizontal[:,:,:,:,1] = E_vertical[:,:,:,:,0]
     
-    A_mat = np.concatenate((np.reshape(E_vertical, (x_probe.size*y_probe.size, x.size*y.size, 2)),
-                        np.reshape(E_horizontal, (x_probe.size*y_probe.size, x.size*y.size, 2))),
+    A_mat = np.concatenate((np.reshape(E_horizontal, (x_probe.size*y_probe.size, x.size*y.size, 2)),
+                        np.reshape(E_vertical, (x_probe.size*y_probe.size, x.size*y.size, 2))),
                        axis=0)
     A_mat = np.concatenate((A_mat[:,:,0], A_mat[:,:,1]), axis=1)
     return A_mat
@@ -93,7 +93,8 @@ def probe_deconvolve(measurements, A_mat, x_probe, y_probe):
     ## size 2 dimension corresponds to vertical-horizontal probe orientation
     
     g = measurements.reshape((x_probe.size*y_probe.size*2, 1))
-    E_solution = np.matmul(np.linalg.inv(A_mat), g)
+    # E_solution = np.matmul(np.linalg.inv(A_mat), g)
+    E_solution = np.matmul(np.conjugate(np.transpose(A_mat)), g)
     
     return E_solution.reshape((x_probe.size, y_probe.size, 2))
     
