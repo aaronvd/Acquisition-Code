@@ -89,12 +89,11 @@ def fft_prop_from_magnetic_currents(K_m, r_vec, k, N):
     f_theta = ( -np.sin(Phi_prop) * K_m_ft[Kx_nonzeros, Ky_nonzeros,0] + 
                np.cos(Phi_prop) * K_m_ft[Kx_nonzeros, Ky_nonzeros,1] )
 
-    E = np.transpose(np.array([
-        np.reshape(np.zeros(f_theta.shape), -1), np.reshape(-f_phi, -1), np.reshape(f_theta, -1)]))
+    E = np.stack((np.zeros(f_theta.shape), -f_phi, f_theta), axis=2)
 
     return Theta_prop, Phi_prop, E
 
-def propagate_from_scans(measurements, f, X, Y, N_theta, N_phi):
+def propagate_from_scans(measurements, f, X, Y, N_theta, N_phi, fft=False):
     # measurements is Nx x Ny x 2 array
     n_hat = np.transpose(np.array([0, 0, 1])[:,None])       # specify antenna orientation
     E = np.reshape(measurements, (measurements.shape[0]*measurements.shape[1], 2))     # stack NFS data into E-field vector
@@ -105,6 +104,9 @@ def propagate_from_scans(measurements, f, X, Y, N_theta, N_phi):
     E = np.stack((E[:,0], E[:,1], np.zeros((E.shape[0]), dtype=np.complex128)), axis=1)
 
     K_m = -np.cross(n_hat, E, axisa=1, axisb=1, axisc=1)     # define magnetic current from surface equivalence relationship
-    Theta_far, Phi_far, E = prop_from_magnetic_currents(K_m, r_vec, 2*np.pi*f/C, N_theta, N_phi)   # propagate magnetic surface currents to far field
+    if fft:
+        Theta_far, Phi_far, E = fft_prop_from_magnetic_currents(K_m, r_vec, 2*np.pi*f/C, np.maximum(N_theta, N_phi))   # propagate magnetic surface currents to far field using FFT
+    else:
+        Theta_far, Phi_far, E = prop_from_magnetic_currents(K_m, r_vec, 2*np.pi*f/C, N_theta, N_phi)   # propagate magnetic surface currents to far field
 
     return Theta_far, Phi_far, E
