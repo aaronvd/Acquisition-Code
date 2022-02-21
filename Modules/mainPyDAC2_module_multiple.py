@@ -27,11 +27,11 @@ board the input [5.0, 4.5, 4.2, 3.2, 1.2, 2.0, 3.3, 4.7] looks like:
 def initializeArduino(numDACs, comPort):
 
     serialPort = setSerial(115200, comPort, numDACs)
-    sendInputLen()
-    msg = receiveFromArduino()
+    sendInputLen(serialPort)
+    msg = receiveFromArduino(serialPort)
 
     while msg.find("Received: " + str(numDACs) + " from serial.") == -1:
-        msg = receiveFromArduino()
+        msg = receiveFromArduino(serialPort)
         
     if not (msg == "NO VAL"):
         print(msg)
@@ -229,7 +229,7 @@ def testProgram30DAC(serialPort, voltage_matrix_30):
         lastinstruction2 = getInstruction(lastinstruction).split(' ')[:-1]
 
         while arduinoReply.find("Received: " + str(lastinstruction2[len(lastinstruction2) - 1]) + " from serial!") == -1:
-            arduinoReply = receiveFromArduino()
+            arduinoReply = receiveFromArduino(serialPort)
 
 
 def testProgram12DAC(serialPort, voltage_matrix_12):
@@ -274,5 +274,5 @@ def testProgram12DAC(serialPort, voltage_matrix_12):
         lastinstruction2 = getInstruction(lastinstruction).split(' ')[:-1]
 
         while arduinoReply.find("Received: " + str(lastinstruction2[len(lastinstruction2) - 1]) + " from serial!") == -1:
-            arduinoReply = receiveFromArduino()
+            arduinoReply = receiveFromArduino(serialPort)
 
