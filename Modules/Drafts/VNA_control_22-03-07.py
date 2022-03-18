@@ -11,16 +11,12 @@ def instrument_open(address):
     print(instr.query('*IDN?'))
     return instr
 
-def VNA_initiate(instr, npoints, fstart, fstop, ifbw, power, calfile=None):
+def VNA_initiate(instr, npoints, fstart, fstop, ifbw, power, spar, calfile=None):
     print('Initiating VNA...\n')
     
     instr.write('SYST:PRES')   # resest VNA
     instr.write('DISP:ENAB ON') # set display to ON
-    
-    S_LIST = ['S11', 'S22', 'S21', 'S12']
-    for i in range(4):
-        instr.write('CALC:PAR:DEF:EXT "Meas{}",{}'.format(S_LIST[i],S_LIST[i]))  # define measurement for all S values
-        
+    instr.write('CALC:PAR:DEF:EXT "Meas{}",{}'.format(spar,spar))  # define measurement
     if calfile is not None:
         instr.write('SENS:CORR:CSET:ACT "{}",1'.format(calfile))  # set calibration file
     instr.write('SOUR:POW1 {}'.format(power))    # set power
@@ -33,10 +29,10 @@ def VNA_initiate(instr, npoints, fstart, fstop, ifbw, power, calfile=None):
     instr.write('TRIG:SOUR MAN')   # set manual trigger
     instr.write('TRIG:SCOP CURR')
     instr.write('FORM:DATA ASCII,0')  # set data output format
+    # f = instr.query('SENS:X?')  #  return frequency values
     instr.query('*OPC?')
-
+    
     print('Done\n')
-    return np.fromstring(instr.query('SENS:X?'), sep=",") # return frequency values
         
 def VNA_read(instr, spar):
     instr.write('CALC:PAR:SEL "Meas{}"'.format(spar))
@@ -44,14 +40,10 @@ def VNA_read(instr, spar):
     instr.write('INIT:IMM')
     instr.query('*OPC?')
     instr.write('CALC:FORM IMAG')
-    
-    simag = np.fromstring(instr.query('CALC:DATA? FDATA'), sep=',')
-    #simag = np.fromstring(instr.query('CALC:DATA? FDATA'), dtype=np.complex128, sep=',')
+    simag = np.fromstring(instr.query('CALC:DATA? FDATA'), dtype=np.complex128, sep=',')
     instr.query('*OPC?')
     instr.write('CALC:FORM REAL')
-    sreal = np.fromstring(instr.query('CALC:DATA? FDATA'), sep=',')
-    #sreal = np.fromstring(instr.query('CALC:DATA? FDATA'), dtype=np.complex128, sep=',')
-    
+    sreal = np.fromstring(instr.query('CALC:DATA? FDATA'), dtype=np.complex128, sep=',')
     instr.query('*OPC?')
     return sreal + 1j*simag
     
