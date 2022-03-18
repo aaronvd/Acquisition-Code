@@ -315,10 +315,11 @@ def map_volts_to_pins(voltages):
     element_pin_index = np.argsort(
         element_number_headers[np.where(element_number_headers != 0)])
 
-    voltages = voltages[element_pin_index]
-    voltages = np.insert(voltages, 82, np.zeros(79))
+    voltages_new = np.empty(161)
+    voltages_new[element_pin_index] = voltages
+    voltages_new = np.insert(voltages_new, 82, np.zeros(79))
 
-    return voltages
+    return voltages_new
 
 
 def testProgram30DAC(serialPort, voltage_matrix_30):
