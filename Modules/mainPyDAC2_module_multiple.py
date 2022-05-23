@@ -311,13 +311,14 @@ def map_volts_to_pins(voltages):
         (np.zeros(120 - element_number_header_2.size), element_number_header_2))
     element_number_headers = np.concatenate(
         (element_number_header_1, element_number_header_2))
+    element_number_headers = np.flip(element_number_headers)
 
-    element_pin_index = np.argsort(
-        element_number_headers[np.where(element_number_headers != 0)])
+    element_pin_index = np.argsort(element_number_headers) + 1
+    element_pin_index = element_pin_index[-np.count_nonzero(
+        element_number_headers):]
 
-    voltages_new = np.empty(161)
-    voltages_new[element_pin_index] = voltages
-    voltages_new = np.insert(voltages_new, 82, np.zeros(79))
+    voltages_new = np.zeros(240)
+    voltages_new[element_pin_index-1] = voltages
 
     return voltages_new
 
