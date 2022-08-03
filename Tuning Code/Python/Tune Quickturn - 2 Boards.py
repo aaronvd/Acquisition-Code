@@ -43,9 +43,3 @@ tune.testProgram30DAC(serial2,ts[indx])
 time.sleep(0.01)
 
 
-
-
-
-
-
-
