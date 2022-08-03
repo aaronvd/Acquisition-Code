@@ -94,3 +94,13 @@ element_number_header_2 = np.flip(element_number_header_2.reshape((60, 2)), axis
 element_number_headers = np.concatenate((element_number_header_1, element_number_header_2)) - 1 # element indices starting at 0
 
 element_pin_index = np.argsort(element_number_headers)[element_number_headers.tolist().count(-1):]
+
+def make_ts_quickturn(element_voltages):
+    element_pin_index = element_pin_index[:-1]
+    ts = []
+    for i in range(element_voltages.shape[0]):
+        t = np.zeros(240)
+        for j in range(element_voltages.shape[1]):
+            t[element_pin_index[j]] = element_voltages[i,j]
+        ts.append(t)
+    return ts
