@@ -11,7 +11,7 @@ def instrument_open(address):
     print(instr.query('*IDN?'))
     return instr
 
-def VNA_initiate(instr, npoints, fstart, fstop, ifbw, power, calfile=None):
+def VNA_initiate(instr, npoints, fstart, fstop, ifbw, power, calfile=None, **kwargs):
     print('Initiating VNA...\n')
     
     instr.write('SYST:PRES')   # resest VNA
@@ -35,8 +35,33 @@ def VNA_initiate(instr, npoints, fstart, fstop, ifbw, power, calfile=None):
     instr.write('FORM:DATA ASCII,0')  # set data output format
     instr.query('*OPC?')
 
+    time_domain = kwargs.get('time_domain', False)
+    time_center = kwargs.get('time_center', 0)
+    time_span = kwargs.get('time_span', 20e-9)
+    if time_domain:
+        for i in range(4):
+            instr.write('CALC:PAR:SEL "Meas{}"'.format(S_LIST[i]))
+            instr.write('CALC:TRAN:TIME:STAT ON')
+            instr.write('CALC:TRAN:TIME:CENT {}'.format(time_center))
+            instr.write('CALC:TRAN:TIME:SPAN {}'.format(time_span))
+    window_center = kwargs.get('window_center', None)
+    window_span = kwargs.get('window_span', None)
+    if window_center is not None:
+        for i in range(4):
+            instr.write('CALC:PAR:SEL "Meas{}"'.format(S_LIST[i]))
+            instr.write('CALC:FILT:GATE:TIME:CENT {}'.format(window_center))
+            instr.write('CALC:FILT:GATE:TIME:SHAP NORM')
+            instr.write('CALC:FILT:GATE:TIME:SPAN {}'.format(window_span))
+            instr.write('CALC:FILT:GATE:TIME:TYPE BPAS')
+            instr.write('CALC:FILT:GATE:TIME:STAT ON')
+    
+    instr.query('*OPC?')
+
     print('Done\n')
-    return np.fromstring(instr.query('SENS:X?'), sep=",") # return frequency values
+    if time_domain:
+        return np.fromstring(instr.query('CALC:X:VAL?'), sep=",")   # return time values
+    else:
+        return np.fromstring(instr.query('SENS:X?'), sep=",") # return frequency values
         
 def VNA_read(instr, spar):
     instr.write('CALC:PAR:SEL "Meas{}"'.format(spar))
