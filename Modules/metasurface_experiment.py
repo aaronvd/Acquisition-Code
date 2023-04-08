@@ -38,7 +38,7 @@ class VNA:
        
        fstart, fstop (float):       start and stop frequencies for measurement IN GHZ.
                     nf (int):       # frequency points.'''
-    def __init__(self, visa_address, fstart=8, fstop=12, nf=401, ifbw=1e3, power=0, calfile=''):
+    def __init__(self, visa_address, fstart=8, fstop=12, nf=401, ifbw=1e3, power=0, calfile='', **kwargs):
         self.device = instrument_open(visa_address)
         self.parameters = {'fstart': fstart,
                            'fstop': fstop,
@@ -47,13 +47,18 @@ class VNA:
                            'power': power,
                            'calfile': calfile
                            }
-        self.initialize_vna()
+        self.initialize_vna(**kwargs)
 
-    def initialize_vna(self):
-        VNA_initiate(self.device, self.parameters['nf'],
+    def initialize_vna(self, **kwargs):
+        out = VNA_initiate(self.device, self.parameters['nf'],
                      self.parameters['fstart'], self.parameters['fstop'],
                      self.parameters['ifbw'], self.parameters['power'],
-                     calfile=self.parameters['calfile'])
+                     calfile=self.parameters['calfile'],
+                     **kwargs)
+        if kwargs.get('time_domain'):
+            self.t = out
+        else:
+            self.f = out
 
     def read_vna(self, s):
         '''s (str): S parameter to read, given as string, e.g. "S11", "S21",...'''
