@@ -85,7 +85,7 @@ class Arduino:
                 ready = 1
         print("Arduino Initialized")
 
-    def write_handshake(self, data_out: str, handshake=True):
+    def write_handshake(self, data_out: str, handshake=True, verbose=False):
         start_time = time.time()
         self.device.write(bytes(data_out, 'utf-8'))
 
@@ -96,14 +96,17 @@ class Arduino:
                 data_in = self.device.readline()
                 if data_in == bytes("Done\r\n", 'utf-8'):
                     done = 1
-                    print("Data received by Arduino (Time Elapsed: %s)" %
-                        (time.time() - start_time))
+                    if verbose:
+                        print("Data received by Arduino (Time Elapsed: %s)" %
+                            (time.time() - start_time))
                 else:
                     time.sleep(0.001)
+        else:
+            time.sleep(0.01)
 
-    def apply_tuning_state(self, instructions, handshake=True):
+    def apply_tuning_state(self, instructions, handshake=True, verbose=False):
         for instr in instructions:
-            self.write_handshake(instr, handshake)
+            self.write_handshake(instr, handshake, verbose)
 
     # Closes serial port; prevents error after program termination when used
     def close(self):
