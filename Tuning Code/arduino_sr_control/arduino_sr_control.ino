@@ -31,7 +31,7 @@ void loop() {
     index = Serial.parseInt();
     if (index == eof) {
       setState();
-      Serial.println("Done");
+      //Serial.println("Done");
     }
     else {
       updateState(index);
