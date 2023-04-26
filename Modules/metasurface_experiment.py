@@ -15,9 +15,10 @@ def create_instruction(tuning_state: np.ndarray, output_type='DAC', eof=str(9999
             r += 1
             instruction_str = ""
             for entry in row:
-                instruction_str += (str(((r << 12) | (15) | (entry << 4))) + " ")
+                instruction_str += (" " + str(((r << 12) | (15) | (entry << 4))))
+            instruction_str += " " + eof
 
-            instructions.append(instruction_str + eof)
+            instructions.append(instruction_str)
 
     elif output_type == 'shift_register':
         tuning_state = np.reshape(np.flip(tuning_state), (-1, 8))
