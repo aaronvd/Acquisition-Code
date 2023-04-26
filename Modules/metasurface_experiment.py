@@ -28,9 +28,9 @@ def create_instruction(tuning_state: np.ndarray, output_type='DAC', eof=str(9999
             instruction_str = ""
             for j in range(8):
                 instruction_str += str(tuning_state[i,j])
-            instructions += str(int(instruction_str, 2)) + " "
+            instructions += " " + str(int(instruction_str, 2))
 
-        instructions = [instructions + eof]
+        instructions = [instructions + " " + eof]
 
     return instructions
 
