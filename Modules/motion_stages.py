@@ -146,6 +146,14 @@ class Zaber_2axis_LST1500D:
         self.ser.write(f'/{self.y_axis} set maxspeed {velocity_in_motor_speed}\r'.encode())
         dummy_reply=self.ser.read_until()
 
+    def set_maxspeed(self, maxspeed):
+        self.maxspeed = maxspeed
+        velocity_in_motor_speed = int(round(self.maxspeed * self.velocity_conversion/self.step_size, 0))
+        self.ser.write(f'/{self.x_axis} set maxspeed {velocity_in_motor_speed}\r'.encode())
+        dummy_reply=self.ser.read_until()
+        self.ser.write(f'/{self.y_axis} set maxspeed {velocity_in_motor_speed}\r'.encode())
+        dummy_reply=self.ser.read_until()
+
     def wait_for_idle_status(self):
         
         #test that x-axis has finished moving
