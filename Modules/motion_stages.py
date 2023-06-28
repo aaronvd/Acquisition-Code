@@ -129,6 +129,9 @@ class Zaber_2axis_LST1500D:
         self.ser=serial.Serial()
         self.ser.port=port
         self.maxspeed = maxspeed
+        if self.maxspeed > 150:
+            print('Max speed cannot exceed 150 mm/s, setting to 150 mm/s.')
+            self.maxspeed = 150
         self.ser.timeout = 1
         self.ser.baudrate=115200
         self.ser.open()
@@ -148,6 +151,9 @@ class Zaber_2axis_LST1500D:
 
     def set_maxspeed(self, maxspeed):
         self.maxspeed = maxspeed
+        if self.maxspeed > 150:
+            print('Max speed cannot exceed 150 mm/s, setting to 150 mm/s.')
+            self.maxspeed = 150
         velocity_in_motor_speed = int(round(self.maxspeed * self.velocity_conversion/self.step_size, 0))
         self.ser.write(f'/{self.x_axis} set maxspeed {velocity_in_motor_speed}\r'.encode())
         dummy_reply=self.ser.read_until()
