@@ -22,6 +22,7 @@ void setup() {
   pinMode(latchPin, OUTPUT); 
 
   digitalWrite(latchPin, HIGH);
+  digitalWrite(latchPin, LOW);
 
   Serial.println("Ready");
 }
