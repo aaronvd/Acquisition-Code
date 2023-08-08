@@ -4,7 +4,7 @@ import numpy as np
 
 from VNA_control import *
 
-def create_instruction(tuning_state: np.ndarray, output_type='DAC', eof=str(999999999)):
+def create_instruction(tuning_state: np.ndarray, output_type='DAC'):
     '''Creates instruction strings to be sent by Arduino. Tuning state is given as 1D array of values in order of pins.'''
     if output_type == 'DAC':
         tuning_state = np.flip(tuning_state.reshape((-1, 8)).T, axis=1)
@@ -16,7 +16,6 @@ def create_instruction(tuning_state: np.ndarray, output_type='DAC', eof=str(9999
             instruction_str = ""
             for entry in row:
                 instruction_str += (" " + str(((r << 12) | (15) | (entry << 4))))
-            instruction_str += " " + eof
 
             instructions.append(instruction_str)
 
@@ -30,48 +29,15 @@ def create_instruction(tuning_state: np.ndarray, output_type='DAC', eof=str(9999
                 instruction_str += str(tuning_state[i,j])
             instructions += " " + str(int(instruction_str, 2))
 
-        instructions = [instructions + " " + eof]
+        instructions = [instructions]
 
     return instructions
 
-class VNA:
-    '''Class for initializing VNA and reading experimental S parameter measurements.
-       
-       fstart, fstop (float):       start and stop frequencies for measurement IN GHZ.
-                    nf (int):       # frequency points.'''
-    def __init__(self, visa_address, fstart=8, fstop=12, nf=401, ifbw=1e3, power=0, calfile='', **kwargs):
-        self.device = instrument_open(visa_address)
-        self.parameters = {'fstart': fstart,
-                           'fstop': fstop,
-                           'nf': nf,
-                           'ifbw': ifbw,
-                           'power': power,
-                           'calfile': calfile
-                           }
-        self.initialize_vna(**kwargs)
-
-    def initialize_vna(self, **kwargs):
-        out = VNA_initiate(self.device, self.parameters['nf'],
-                     self.parameters['fstart'], self.parameters['fstop'],
-                     self.parameters['ifbw'], self.parameters['power'],
-                     calfile=self.parameters['calfile'],
-                     **kwargs)
-        if kwargs.get('time_domain'):
-            self.t = out
-        else:
-            self.f = out
-
-    def read_vna(self, s):
-        '''s (str): S parameter to read, given as string, e.g. "S11", "S21",...'''
-        m = VNA_read(self.device, s)
-        return m
-
 class Arduino:
-    def __init__(self, baudrate: int, port: str, eof: any = 999999999):
+    def __init__(self, baudrate: int, port: str):
         self.device = {}
         self.port = port
         self.baudrate = baudrate
-        self.eof = str(eof)
 
     def initialize_device(self, timeout: int = 0.1) -> None:
         self.device = serial.Serial(port=self.port, baudrate=self.baudrate, timeout=timeout)
@@ -112,3 +78,35 @@ class Arduino:
     # Closes serial port; prevents error after program termination when used
     def close(self):
         self.device.close()
+
+class VNA:
+    '''Class for initializing VNA and reading experimental S parameter measurements.
+       
+       fstart, fstop (float):       start and stop frequencies for measurement IN GHZ.
+                    nf (int):       # frequency points.'''
+    def __init__(self, visa_address, fstart=8, fstop=12, nf=401, ifbw=1e3, power=0, calfile='', **kwargs):
+        self.device = instrument_open(visa_address)
+        self.parameters = {'fstart': fstart,
+                           'fstop': fstop,
+                           'nf': nf,
+                           'ifbw': ifbw,
+                           'power': power,
+                           'calfile': calfile
+                           }
+        self.initialize_vna(**kwargs)
+
+    def initialize_vna(self, **kwargs):
+        out = VNA_initiate(self.device, self.parameters['nf'],
+                     self.parameters['fstart'], self.parameters['fstop'],
+                     self.parameters['ifbw'], self.parameters['power'],
+                     calfile=self.parameters['calfile'],
+                     **kwargs)
+        if kwargs.get('time_domain'):
+            self.t = out
+        else:
+            self.f = out
+
+    def read_vna(self, s):
+        '''s (str): S parameter to read, given as string, e.g. "S11", "S21",...'''
+        m = VNA_read(self.device, s)
+        return m

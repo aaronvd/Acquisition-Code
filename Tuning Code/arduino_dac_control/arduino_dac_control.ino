@@ -1,15 +1,17 @@
 #include <SPI.h>
 
 long index;
-long eof = 999999999;
+int len = 14;   // # of DACs
+int temp = 0;
 
 // Pin config. for Uno
 //const int dataPin = 11;
 //const int clockPin = 13;
 //const int latchPin = 9;
+
 // Pin config. for Mega
 const int dataPin = 51;
-const int clockPin = 52;
+//const int clockPin = 52;
 const int latchPin = 49;
 
 void setup() {
@@ -18,32 +20,29 @@ void setup() {
   Serial.flush();
 
   pinMode(dataPin, OUTPUT); 
-  pinMode(clockPin, OUTPUT);
+  //pinMode(clockPin, OUTPUT);
   pinMode(latchPin, OUTPUT); 
 
   digitalWrite(latchPin, HIGH);
-  digitalWrite(latchPin, LOW);
 
   Serial.println("Ready");
 }
 
 void loop() {
-  while(!Serial.available());
-    index = Serial.parseInt();
-    if (index == eof) {
-      setState();
-      //Serial.println("Done");
-    }
-    else {
-      updateState(index);
-    }
-}
-
-void setState() {
-  digitalWrite(latchPin, HIGH);
+  while (!Serial.available());
   digitalWrite(latchPin, LOW);
+  temp = 0;
+  
+  while (Serial.available()){
+    index = Serial.parseInt();
+    SPI.transfer16(index);
+    temp = temp + 1;
+
+    if (temp == len){
+      digitalWrite(latchPin, HIGH);
+      Serial.flush();
+      break;
+    }
+  }
 }
 
-void updateState(long value) {
-  SPI.transfer16(value);
-}
