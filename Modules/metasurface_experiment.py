@@ -1,8 +1,18 @@
 import serial
+import pyvisa as visa
 import time
 import numpy as np
 
-from VNA_control import *
+import VNA_control as vc
+
+def instrument_open(address):
+    rm = visa.ResourceManager()
+    instr = rm.open_resource(address)
+    time.sleep(5)
+    instr.read_termination = '\n'
+    instr.write_termination = '\n'
+    print(instr.query('*IDN?'))
+    return instr
 
 def create_instruction(tuning_state: np.ndarray, output_type='DAC'):
     '''Creates instruction strings to be sent by Arduino. Tuning state is given as 1D array of values in order of pins.'''
@@ -79,6 +89,38 @@ class Arduino:
     def close(self):
         self.device.close()
 
+class SwitchDriver:
+    '''Class for initializing Agilent 11713C and controlling switch channels.'''
+    def __init__(self, visa_address, N_channels=6):
+        self.device = instrument_open(visa_address)
+        self.N_channels = N_channels
+        self.close_channels()
+
+    def open_channels(self, channels=None, bank=1):
+        if channels is None:
+            channels = [i+1 for i in range(self.N_channels)]
+        if isinstance(channels, int):
+            channels = [channels]
+        command_string = '(@'
+        for channel in channels:
+            command_string += str(bank)+'0'+str(channel)+','
+        command_string = command_string[:-1] + ')'
+        self.device.write('ROUTe:OPEn '+command_string)
+
+    def close_channels(self, channels=None, bank=1):
+        if channels is None:
+            channels = [i+1 for i in range(self.N_channels)]
+        if isinstance(channels, int):
+            channels = [channels]
+        command_string = '(@'
+        for channel in channels:
+            command_string += str(bank)+'0'+str(channel)+','
+        command_string = command_string[:-1] + ')'
+        self.device.write('ROUTe:CLOSe '+command_string)
+
+    def close(self):
+        self.device.close()
+
 class VNA:
     '''Class for initializing VNA and reading experimental S parameter measurements.
        
@@ -96,7 +138,7 @@ class VNA:
         self.initialize_vna(**kwargs)
 
     def initialize_vna(self, **kwargs):
-        out = VNA_initiate(self.device, self.parameters['nf'],
+        out = vc.VNA_initiate(self.device, self.parameters['nf'],
                      self.parameters['fstart'], self.parameters['fstop'],
                      self.parameters['ifbw'], self.parameters['power'],
                      calfile=self.parameters['calfile'],
@@ -108,5 +150,5 @@ class VNA:
 
     def read_vna(self, s):
         '''s (str): S parameter to read, given as string, e.g. "S11", "S21",...'''
-        m = VNA_read(self.device, s)
+        m = vc.VNA_read(self.device, s)
         return m
