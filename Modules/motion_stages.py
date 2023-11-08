@@ -6,8 +6,8 @@ Created on Mon Jun  1 22:10:08 2020
 """
 import serial
 from time import sleep
-from zaber_motion.ascii import Connection
-from zaber_motion import Units, MotionLibException
+# from zaber_motion.ascii import Connection
+# from zaber_motion import Units, MotionLibException
 
 # configure the serial connection
 #check for usb rs232 serial connection using command line: ls /dev/cu.*
