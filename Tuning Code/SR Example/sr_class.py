@@ -1,5 +1,4 @@
 import serial
-import pyvisa as visa
 import time
 import numpy as np
 
