@@ -60,7 +60,7 @@ class SyringePump:
             if print_to_screen is True:
                 print(f'Syringe [{address}], (status: {status}), Response: {data}')
            
-            if status is 'S':
+            if status == 'S':
                 break
             
     def setup(self, pump_number: float, syringe_diameter: float, volume_step: float, rate: float):
@@ -125,15 +125,15 @@ class ZaberMultistaticStage:
         self.port.close() 
 
 class Zaber_2axis_LST1500D:
-    def __init__(self, port: str = 'COM8', maxspeed=150):
-        self.ser=serial.Serial()
-        self.ser.port=port
+    def __init__(self, port: str = 'COM8', maxspeed=25, timeout=0.1):
+        self.ser = serial.Serial()
+        self.ser.port = port
         self.maxspeed = maxspeed
         if self.maxspeed > 150:
             print('Max speed cannot exceed 150 mm/s, setting to 150 mm/s.')
             self.maxspeed = 150
-        self.ser.timeout = 1
-        self.ser.baudrate=115200
+        self.ser.timeout = timeout
+        self.ser.baudrate = 115200
         self.ser.open()
                      
         # device1 = [0] # Device number 1  
@@ -145,9 +145,9 @@ class Zaber_2axis_LST1500D:
         self.velocity_conversion = 1.6384   #conversion factor for velocity, in seconds
         velocity_in_motor_speed = int(round(self.maxspeed * self.velocity_conversion/self.step_size, 0))
         self.ser.write(f'/{self.x_axis} set maxspeed {velocity_in_motor_speed}\r'.encode())
-        dummy_reply=self.ser.read_until()
+        self.flush()
         self.ser.write(f'/{self.y_axis} set maxspeed {velocity_in_motor_speed}\r'.encode())
-        dummy_reply=self.ser.read_until()
+        self.flush()
 
     def set_maxspeed(self, maxspeed):
         self.maxspeed = maxspeed
@@ -156,60 +156,78 @@ class Zaber_2axis_LST1500D:
             self.maxspeed = 150
         velocity_in_motor_speed = int(round(self.maxspeed * self.velocity_conversion/self.step_size, 0))
         self.ser.write(f'/{self.x_axis} set maxspeed {velocity_in_motor_speed}\r'.encode())
-        dummy_reply=self.ser.read_until()
+        dummy_reply = self.ser.read_until()
         self.ser.write(f'/{self.y_axis} set maxspeed {velocity_in_motor_speed}\r'.encode())
-        dummy_reply=self.ser.read_until()
+        dummy_reply = self.ser.read_until()
 
     def wait_for_idle_status(self):
         
         #test that x-axis has finished moving
-        testx=-1
+        testx = -1
         while testx == -1:
             sleep(.02)
             self.ser.write(f'/{self.x_axis}\r'.encode())            
-            reply_x=self.ser.read_until()
-            testx=reply_x.decode().find('IDLE')
+            reply_x = self.ser.read_until()
+            testx = reply_x.decode().find('IDLE')
             # print(f'{reply_x.decode()}, and test is {testx}')
             if reply_x.decode().find('WR') != -1:
                 print('x axis not homed')
             sleep(.1)
+        self.flush()
         
         #test that y-axis has finished moving
-        testy=-1
-        while testy== -1:
+        testy = -1
+        while testy == -1:
             sleep(.02)
             self.ser.write(f'/{self.y_axis}\r'.encode())
-            reply_y=self.ser.read_until()            
-            testy=reply_y.decode().find('IDLE')
+            reply_y = self.ser.read_until()            
+            testy = reply_y.decode().find('IDLE')
             # print(f'{reply_y.decode()}, and test is {testy}')
             if reply_y.decode().find('WR') != -1:
                 print('y axis not homed')
             sleep(.1) #set for long settle time
-        
-    def home_axes(self):
-        self.ser.write('/0 home\r'.encode())
-        dummy_reply=self.ser.read_until() #throw away response so wait for stage command works properly
-        dummy_reply=self.ser.read_until() #throw away response so wait for stage command works properly
-        self.wait_for_idle_status()
+        self.flush()
 
-    def move_x_absolute(self, position, quiet=True): #input in mm
-        position_in_motor_steps =int(round(position/self.step_size, 0))
-        self.ser.write(f'/{self.x_axis} move abs {position_in_motor_steps}\r'.encode() )
-        dummy_reply=self.ser.read_until() #throw away response so wait for stage command works properly
-        if not quiet:
-            print(f'set x_position= {position:.6g}')
-            print(f'set x_position in steps= {position_in_motor_steps:.12g}')
-        self.wait_for_idle_status()
+    def flush(self):
+        reply = self.ser.read_until().decode()
+        while reply:
+            reply = self.ser.read_until().decode()
         
-    def move_y_absolute(self, position, quiet=True): #input in mm
-        #note accounting for negative axis by subtracting 1500 mm
-        position_in_motor_steps =int(round(position/self.step_size, 0))
-        self.ser.write(f'/{self.y_axis} move abs {position_in_motor_steps}\r'.encode())
-        dummy_reply=self.ser.read_until() #throw away response so wait for stage command works properly
+    def home_axes(self, wait=True):
+        self.ser.write('/0 home\r'.encode())
+        self.flush()
+        if wait:
+            self.wait_for_idle_status()
+
+    def move_x_absolute(self, position, quiet=True, wait=True): #input in mm
+        position_in_motor_steps = int(round(position/self.step_size, 0))
+        self.ser.write(f'/{self.x_axis} move abs {position_in_motor_steps}\r'.encode())
+        self.flush()
         if not quiet:
-            print(f'set y_position= {position:.6g}')
-            print(f'set y_position in steps= {position_in_motor_steps:.12g}')
-        self.wait_for_idle_status()
+            print(f'set x_position = {position:.6g}')
+            print(f'set x_position in steps = {position_in_motor_steps:.12g}')
+        if wait:
+            self.wait_for_idle_status()
+        
+    def move_y_absolute(self, position, quiet=True, wait=True): #input in mm
+        position_in_motor_steps = int(round(position/self.step_size, 0))
+        self.ser.write(f'/{self.y_axis} move abs {position_in_motor_steps}\r'.encode())
+        self.flush()
+        if not quiet:
+            print(f'set y_position = {position:.6g}')
+            print(f'set y_position in steps = {position_in_motor_steps:.12g}')
+        if wait:
+            self.wait_for_idle_status()
+
+    def move_xy_absolute(self, position, quiet=True, wait=True): #input in mm
+        position_in_motor_steps = int(round(position/self.step_size, 0))
+        self.ser.write(f'/{self.axes} move abs {position_in_motor_steps}\r'.encode())
+        self.flush()
+        if not quiet:
+            print(f'set xy_position = {position:.6g}')
+            print(f'set xy_position in steps = {position_in_motor_steps:.12g}')
+        if wait:
+            self.wait_for_idle_status()
         
     def __enter__(self):
         return self
